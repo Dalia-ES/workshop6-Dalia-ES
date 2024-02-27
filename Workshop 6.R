@@ -18,4 +18,14 @@ beetles %>%
 beetles %>%
   filter(Ochicanthon_woroae > 15, Month == 'July') #Selects only the rows that this species has greater than 15 samples in the month of July
 
-
+beetles %>% rename(c(Copris_agnus=Copis_agnus,
+                     Copris_ramosiceps=Copis_ramosiceps)) #Individually renames vectors using the rename function
+?rename
+fixcopris <- function(x) {gsub("opis","opris",x)} #Creates a function tht replaces opis with opris
+beetles %>% rename_with(fixcopris) #Renames the species with the rename_with function, using the function I created
+beetles %>%
+  rename_with(~gsub("opis", "opris",.), starts_with("Copis")) #Alternative way to do the above without creating a new function. ~ means 'as a function of'
+beetles <- beetles %>%
+  rename_with(~gsub("opis", "opris",.), starts_with("Copis")) %>%
+  pivot_longer(cols=3:last_col(), names_to='Species', values_to='Count') #Condenses the table, moving all species into their own column
+beetles
