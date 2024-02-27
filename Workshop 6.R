@@ -2,7 +2,7 @@ install.packages("tidyr")
 install.packages("dplyr")
 library(tidyr)
 library(dplyr)
-beetles <- read.table("dung_beetles.csv", sep=",",header=T)
+beetles <- read.table("dung_beetles.csv", sep=",",header=T, na.strings=c('X.1','X.2','X.3','X.4','X.5','X.6','X.7','X.8','X.9','X.10','X.11','X.12'))
 View(beetles)
 str(beetles)
 ?select
@@ -33,3 +33,9 @@ beetles
 beetles <- beetles %>%
   rename_with(tolower, everything()) #Converts capitalized column names to lower case
 beetles
+
+beetles <- beetles %>%
+  separate_wider_delim('species', '_', names=c('genus', 'species'), too_few=c('align_end')) #Separates genus and species names, and makes a new column for them
+beetles
+
+?separate_wider_delim
