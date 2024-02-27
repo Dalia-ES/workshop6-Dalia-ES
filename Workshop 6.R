@@ -29,3 +29,7 @@ beetles <- beetles %>%
   rename_with(~gsub("opis", "opris",.), starts_with("Copis")) %>%
   pivot_longer(cols=3:last_col(), names_to='Species', values_to='Count') #Condenses the table, moving all species into their own column
 beetles
+
+beetles <- beetles %>%
+  rename_with(tolower, everything()) #Converts capitalized column names to lower case
+beetles
