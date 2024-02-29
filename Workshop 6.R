@@ -2,7 +2,7 @@ install.packages("tidyr")
 install.packages("dplyr")
 library(tidyr)
 library(dplyr)
-beetles <- read.table("dung_beetles.csv", sep=",",header=T, na.strings=c('X.1','X.2','X.3','X.4','X.5','X.6','X.7','X.8','X.9','X.10','X.11','X.12'))
+beetles <- read.table("dung_beetles.csv", sep=",",header=T)
 View(beetles)
 str(beetles)
 ?select
@@ -34,8 +34,76 @@ beetles <- beetles %>%
   rename_with(tolower, everything()) #Converts capitalized column names to lower case
 beetles
 
-beetles <- beetles %>%
+beetles %>%
   separate_wider_delim('species', '_', names=c('genus', 'species'), too_few=c('align_end')) #Separates genus and species names, and makes a new column for them
 beetles
 
-?separate_wider_delim
+beetles %>% mutate("species"=gsub("_"," ",species)) #Uses the mutate function to remove the underscores of the values in the species column
+
+casesdf <- read.table("WMR2022_reported_cases_3.txt",
+                      sep="\t",
+                      header=T,
+                      na.strings=c("")) %>% 
+  fill(country) %>% 
+  pivot_longer(cols=c(3:14),
+               names_to="year",
+               values_to="cases") %>%
+  pivot_wider(names_from = method,
+              values_from = cases)
+casesdf
+casesdf <- casesdf %>% rename(c("suspected"="Suspected cases",
+                                "examined"="Microscopy examined",
+                                "positive"="Microscopy positive")) #Uses the rename function to rename the columns
+str(casesdf,vec.len=2)
+casesdf <- casesdf %>% mutate("year"=as.numeric(gsub("X","",year))) #Removes X infront of year columns and changes it to a numeric value
+casesdf
+str(casesdf)
+casesdf %>% mutate("country"=gsub("[0-9]","",country)) #Removes all numbers from country column
+casesdf %>% mutate("suspected"=as.numeric(gsub("[^0-9]","",suspected))) #Removes all numbers from suspected column and treats it as a numeric value
+clean_number <- function(x) {as.numeric(gsub("[^0-9]","",x))} #Makes a function which cleans numbers and casts them to a numeric value
+?across
+casesdf %>% mutate(across(c(suspected,examined,positive),clean_number)) #Across function lets you apply the same function to many columns
+casesdf %>% mutate(across(!country,clean_number)) #Does the same as above, highlighting everything but the country column
+casesdf %>% 
+  mutate(test_positivity = round(clean_number(positive) / clean_number(examined), 2)) #Makes a new column which divides one column. values by the other, rounding those values by 2 and treating both of those coliumns as numeric
+
+casesdf <- casesdf %>% mutate(country = as.factor(country)) #Uses as.factor and mutate functions to convert country column to a factor
+levels(casesdf$country) #Looks at categories of the country factor
+casesdf <- casesdf %>% 
+  mutate(country = gsub("Eritrae",
+                        "Eritrea",
+                        country)) %>%
+  mutate(country = as.factor(country)) #Fixes a mispelling and converts country to a factor
+
+write.table(casesdf, "WMR2022_reported_cases_clean.txt",
+            sep="\t",
+            col.names = T,
+            row.names = F,
+            quote = F) #Writes the table to a file called WRM2022_reported_cases_clean with plain text, tab delimited, with a header line, no quotation marks, and no row names
+
+#Big Challenge which imports and cleans the above text file
+clean_number <- function(x) {as.numeric(gsub("[^0-9]","",x))}
+
+casesdf <- read.table("WMR2022_reported_cases_3.txt",
+                      sep="\t",
+                      header=T,
+                      na.strings=c("")) %>% 
+  fill(country) %>% 
+  pivot_longer(cols=c(3:14),
+               names_to="year",
+               values_to="cases") %>%
+  pivot_wider(names_from = method,
+              values_from = cases) %>% 
+  rename(c("suspected" = "Suspected cases",
+           "examined" = "Microscopy examined",
+           "positive" = "Microscopy positive")) %>% 
+  mutate(year=as.numeric(gsub("X","",year))) %>% 
+  mutate(across(c(suspected,
+                  examined,
+                  positive),clean_number)) %>% 
+  mutate(test_positivity = round(positive / examined,2)) %>% 
+  mutate(country = gsub("Eritrae",
+                        "Eritrea",
+                        country)) %>%
+  mutate(country = as.factor(country)) 
+casesdf
